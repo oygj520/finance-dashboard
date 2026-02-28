@@ -1,0 +1,17 @@
+# Finance Dashboard - 依赖包
+# Python 3.8+
+
+# Web 框架
+eel==0.16.0
+
+# 数据处理
+pandas==2.1.4
+
+# 打包工具
+pyinstaller==6.3.0
+
+# 其他依赖
+bottle==0.12.25
+bottle-websocket==0.2.9
+gevent==23.9.1
+gevent-websocket==0.10.1

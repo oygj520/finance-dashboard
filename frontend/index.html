@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Dashboard - 个人财务仪表盘</title>
+    
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- ECharts -->
+    <script src="https://unpkg.com/echarts@5/dist/echarts.min.js"></script>
+    
+    <!-- Eel -->
+    <script type="text/javascript" src="/eel.js"></script>
+    
+    <!-- 样式 -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部导航 -->
+        <header class="header">
+            <div class="header-content">
+                <h1>💰 Finance Dashboard</h1>
+                <div class="header-actions">
+                    <button @click="refreshData" class="btn btn-secondary">
+                        🔄 刷新
+                    </button>
+                    <button @click="showImportModal = true" class="btn btn-primary">
+                        📥 导入账单
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 概览卡片 -->
+            <section class="overview-cards">
+                <div class="card overview-card">
+                    <h3>📊 今日</h3>
+                    <div class="overview-data">
+                        <div class="data-item income">
+                            <span class="label">收入</span>
+                            <span class="value">¥{{ summary.today.income.toFixed(2) }}</span>
+                        </div>
+                        <div class="data-item expense">
+                            <span class="label">支出</span>
+                            <span class="value">¥{{ summary.today.expense.toFixed(2) }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card overview-card">
+                    <h3>📅 本月</h3>
+                    <div class="overview-data">
+                        <div class="data-item income">
+                            <span class="label">收入</span>
+                            <span class="value">¥{{ summary.month.income.toFixed(2) }}</span>
+                        </div>
+                        <div class="data-item expense">
+                            <span class="label">支出</span>
+                            <span class="value">¥{{ summary.month.expense.toFixed(2) }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card overview-card">
+                    <h3>📆 本年</h3>
+                    <div class="overview-data">
+                        <div class="data-item income">
+                            <span class="label">收入</span>
+                            <span class="value">¥{{ summary.year.income.toFixed(2) }}</span>
+                        </div>
+                        <div class="data-item expense">
+                            <span class="label">支出</span>
+                            <span class="value">¥{{ summary.year.expense.toFixed(2) }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card overview-card">
+                    <h3>💳 总记录</h3>
+                    <div class="overview-data">
+                        <div class="data-item">
+                            <span class="label">交易笔数</span>
+                            <span class="value">{{ total_count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 图表区 -->
+            <section class="charts-section">
+                <!-- 分类支出占比饼图 -->
+                <div class="card chart-card">
+                    <h3>📊 分类支出占比</h3>
+                    <div ref="categoryChart" class="chart-container"></div>
+                </div>
+                
+                <!-- 月度支出趋势柱状图 -->
+                <div class="card chart-card">
+                    <h3>📈 月度收支趋势</h3>
+                    <div ref="monthlyChart" class="chart-container"></div>
+                </div>
+            </section>
+            
+            <!-- 收入支出对比折线图 -->
+            <section class="charts-section">
+                <div class="card chart-card full-width">
+                    <h3>📉 收入/支出对比趋势</h3>
+                    <div ref="trendChart" class="chart-container"></div>
+                </div>
+            </section>
+
+            <!-- 最近交易记录 -->
+            <section class="recent-transactions">
+                <div class="card">
+                    <h3>📝 最近交易记录</h3>
+                    <div class="table-container">
+                        <table v-if="recent_transactions.length > 0">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>类型</th>
+                                    <th>说明</th>
+                                    <th>分类</th>
+                                    <th>金额</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="item in recent_transactions" :key="item.id">
+                                    <td>{{ item.transaction_time }}</td>
+                                    <td>{{ item.transaction_type }}</td>
+                                    <td>{{ item.description }}</td>
+                                    <td><span class="category-tag">{{ item.category }}</span></td>
+                                    <td :class="item.income_or_expense === '收入' ? 'text-income' : 'text-expense'">
+                                        {{ item.income_or_expense === '收入' ? '+' : '-' }}¥{{ Math.abs(item.amount).toFixed(2) }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div v-else class="empty-state">
+                            <p>暂无交易记录</p>
+                            <button @click="showImportModal = true" class="btn btn-primary">
+                                导入第一笔账单
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 导入模态框 -->
+        <div v-if="showImportModal" class="modal-overlay" @click.self="showImportModal = false">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2>📥 导入微信账单</h2>
+                    <button @click="showImportModal = false" class="close-btn">×</button>
+                </div>
+                
+                <div class="modal-body">
+                    <!-- 拖拽上传区 -->
+                    <div 
+                        class="upload-area"
+                        :class="{ 'drag-over': isDragOver }"
+                        @dragover.prevent="isDragOver = true"
+                        @dragleave.prevent="isDragOver = false"
+                        @drop.prevent="handleDrop"
+                    >
+                        <div class="upload-icon">📁</div>
+                        <p>拖拽 CSV 文件到此处</p>
+                        <p class="upload-hint">或</p>
+                        <input 
+                            type="file" 
+                            ref="fileInput"
+                            @change="handleFileSelect"
+                            accept=".csv"
+                            style="display: none"
+                        >
+                        <button @click="$refs.fileInput.click()" class="btn btn-secondary">
+                            选择文件
+                        </button>
+                    </div>
+                    
+                    <!-- 导入状态 -->
+                    <div v-if="importStatus" class="import-status" :class="importStatus.type">
+                        {{ importStatus.message }}
+                    </div>
+                    
+                    <!-- 导入历史 -->
+                    <div class="import-history" v-if="importHistory.length > 0">
+                        <h4>📜 导入历史</h4>
+                        <ul>
+                            <li v-for="item in importHistory.slice(0, 5)" :key="item.id">
+                                <span>{{ item.filename }}</span>
+                                <span class="history-meta">{{ item.record_count }} 条 · {{ item.import_time }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 加载提示 -->
+        <div v-if="loading" class="loading-overlay">
+            <div class="loading-spinner"></div>
+            <p>加载中...</p>
+        </div>
+    </div>
+
+    <!-- Vue 应用 -->
+    <script src="js/app.js"></script>
+</body>
+</html>
