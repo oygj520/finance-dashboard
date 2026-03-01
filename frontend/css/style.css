@@ -166,6 +166,7 @@ body {
 .chart-container {
     height: 300px;
     width: 100%;
+    min-height: 300px;
 }
 
 /* 表格 */

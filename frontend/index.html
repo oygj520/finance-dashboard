@@ -208,7 +208,56 @@
             <div class="loading-spinner"></div>
             <p>加载中...</p>
         </div>
+        
+        <!-- 调试面板 -->
+        <div id="debug-panel" class="debug-panel">
+            <h4>🔍 调试日志 <button @click="debugLogs = []" class="btn-sm">清空</button></h4>
+            <div class="debug-logs">
+                <div v-for="(log, i) in debugLogs" :key="i" :class="'log-' + log.type">{{ log.message }}</div>
+            </div>
+        </div>
     </div>
+
+    <style>
+        .debug-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.9);
+            color: #0f0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            z-index: 9999;
+        }
+        .debug-panel h4 {
+            margin: 0 0 10px 0;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-sm {
+            padding: 2px 8px;
+            font-size: 11px;
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .debug-logs {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .log-info { color: #0ff; }
+        .log-error { color: #f00; }
+        .log-warn { color: #ff0; }
+        .log-success { color: #0f0; }
+    </style>
 
     <!-- Vue 应用 -->
     <script src="js/app.js"></script>

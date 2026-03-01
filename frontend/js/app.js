@@ -12,6 +12,21 @@ createApp({
         const isDragOver = ref(false);
         const importStatus = ref(null);
         const importHistory = ref([]);
+        const debugLogs = ref([]);
+        
+        // 重写 console.log 捕获日志
+        const originalLog = console.log;
+        const originalError = console.error;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            debugLogs.value.push({ type: 'info', message: args.join(' ') });
+            if (debugLogs.value.length > 50) debugLogs.value.shift();
+        };
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            debugLogs.value.push({ type: 'error', message: args.join(' ') });
+            if (debugLogs.value.length > 50) debugLogs.value.shift();
+        };
         
         const summary = reactive({
             today: { income: 0, expense: 0 },
@@ -73,16 +88,22 @@ createApp({
                     Object.assign(charts.monthly, result.charts.monthly);
                     Object.assign(charts.trend, result.charts.trend);
                     
-                    console.log('图表数据:', charts);
+                    console.log('图表数据:', JSON.stringify(charts));
                     
                     // 更新最近交易
                     recent_transactions.value = result.recent_transactions;
                     total_count.value = result.total_count;
                     
-                    // 渲染图表
+                    // 渲染图表 - 等待 DOM 完全渲染
                     await nextTick();
-                    console.log('准备渲染图表...');
-                    renderCharts();
+                    setTimeout(() => {
+                        console.log('准备渲染图表...');
+                        console.log('DOM 元素状态:');
+                        console.log('  categoryChartRef:', categoryChartRef.value);
+                        console.log('  monthlyChartRef:', monthlyChartRef.value);
+                        console.log('  trendChartRef:', trendChartRef.value);
+                        renderCharts();
+                    }, 100);
                 } else {
                     console.error('数据加载失败:', result.error);
                 }
@@ -118,48 +139,56 @@ createApp({
                 return;
             }
             
-            if (categoryChart) {
-                categoryChart.dispose();
-            }
-            
-            categoryChart = echarts.init(categoryChartRef.value);
-            
-            const data = charts.category.categories.map((category, index) => ({
-                value: charts.category.values[index],
-                name: category
-            }));
-            
-            const option = {
-                tooltip: {
-                    trigger: 'item',
-                    formatter: '{b}: ¥{c} ({d}%)'
-                },
-                legend: {
-                    orient: 'vertical',
-                    right: 10,
-                    top: 'center'
-                },
-                series: [
-                    {
-                        type: 'pie',
-                        radius: ['40%', '70%'],
-                        center: ['35%', '50%'],
-                        data: data,
-                        emphasis: {
-                            itemStyle: {
-                                shadowBlur: 10,
-                                shadowOffsetX: 0,
-                                shadowColor: 'rgba(0, 0, 0, 0.5)'
+            try {
+                if (categoryChart) {
+                    categoryChart.dispose();
+                }
+                
+                console.log('初始化饼图，容器尺寸:', categoryChartRef.value.offsetWidth, 'x', categoryChartRef.value.offsetHeight);
+                categoryChart = echarts.init(categoryChartRef.value);
+                
+                const data = charts.category.categories.map((category, index) => ({
+                    value: charts.category.values[index],
+                    name: category
+                }));
+                
+                console.log('饼图数据:', data);
+                
+                const option = {
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: '{b}: ¥{c} ({d}%)'
+                    },
+                    legend: {
+                        orient: 'vertical',
+                        right: 10,
+                        top: 'center'
+                    },
+                    series: [
+                        {
+                            type: 'pie',
+                            radius: ['40%', '70%'],
+                            center: ['35%', '50%'],
+                            data: data,
+                            emphasis: {
+                                itemStyle: {
+                                    shadowBlur: 10,
+                                    shadowOffsetX: 0,
+                                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                }
+                            },
+                            label: {
+                                formatter: '{b}: {d}%'
                             }
-                        },
-                        label: {
-                            formatter: '{b}: {d}%'
                         }
-                    }
-                ]
-            };
-            
-            categoryChart.setOption(option);
+                    ]
+                };
+                
+                categoryChart.setOption(option);
+                console.log('饼图渲染完成');
+            } catch (error) {
+                console.error('饼图渲染失败:', error);
+            }
         }
         
         // 渲染月度柱状图
@@ -170,56 +199,66 @@ createApp({
                 return;
             }
             
-            if (monthlyChart) {
-                monthlyChart.dispose();
-            }
-            
-            monthlyChart = echarts.init(monthlyChartRef.value);
-            
-            const option = {
-                tooltip: {
-                    trigger: 'axis',
-                    axisPointer: {
-                        type: 'shadow'
-                    }
-                },
-                legend: {
-                    data: ['收入', '支出']
-                },
-                grid: {
-                    left: '3%',
-                    right: '4%',
-                    bottom: '3%',
-                    containLabel: true
-                },
-                xAxis: {
-                    type: 'category',
-                    data: charts.monthly.months
-                },
-                yAxis: {
-                    type: 'value'
-                },
-                series: [
-                    {
-                        name: '收入',
-                        type: 'bar',
-                        data: charts.monthly.income,
-                        itemStyle: {
-                            color: '#10b981'
+            try {
+                if (monthlyChart) {
+                    monthlyChart.dispose();
+                }
+                
+                console.log('初始化柱状图，容器尺寸:', monthlyChartRef.value.offsetWidth, 'x', monthlyChartRef.value.offsetHeight);
+                monthlyChart = echarts.init(monthlyChartRef.value);
+                
+                console.log('柱状图数据 - months:', charts.monthly.months);
+                console.log('柱状图数据 - income:', charts.monthly.income);
+                console.log('柱状图数据 - expense:', charts.monthly.expense);
+                
+                const option = {
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'shadow'
                         }
                     },
-                    {
-                        name: '支出',
-                        type: 'bar',
-                        data: charts.monthly.expense,
-                        itemStyle: {
-                            color: '#ef4444'
+                    legend: {
+                        data: ['收入', '支出']
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: charts.monthly.months
+                    },
+                    yAxis: {
+                        type: 'value'
+                    },
+                    series: [
+                        {
+                            name: '收入',
+                            type: 'bar',
+                            data: charts.monthly.income,
+                            itemStyle: {
+                                color: '#10b981'
+                            }
+                        },
+                        {
+                            name: '支出',
+                            type: 'bar',
+                            data: charts.monthly.expense,
+                            itemStyle: {
+                                color: '#ef4444'
+                            }
                         }
-                    }
-                ]
-            };
-            
-            monthlyChart.setOption(option);
+                    ]
+                };
+                
+                monthlyChart.setOption(option);
+                console.log('柱状图渲染完成');
+            } catch (error) {
+                console.error('柱状图渲染失败:', error);
+            }
         }
         
         // 渲染趋势折线图
@@ -230,71 +269,82 @@ createApp({
                 return;
             }
             
-            if (trendChart) {
-                trendChart.dispose();
+            try {
+                if (trendChart) {
+                    trendChart.dispose();
+                }
+                
+                console.log('初始化折线图，容器尺寸:', trendChartRef.value.offsetWidth, 'x', trendChartRef.value.offsetHeight);
+                trendChart = echarts.init(trendChartRef.value);
+                
+                console.log('折线图数据 - months:', charts.trend.months);
+                console.log('折线图数据 - income:', charts.trend.income);
+                console.log('折线图数据 - expense:', charts.trend.expense);
+                console.log('折线图数据 - balance:', charts.trend.balance);
+                
+                const option = {
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    legend: {
+                        data: ['收入', '支出', '结余']
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        boundaryGap: false,
+                        data: charts.trend.months
+                    },
+                    yAxis: {
+                        type: 'value'
+                    },
+                    series: [
+                        {
+                            name: '收入',
+                            type: 'line',
+                            data: charts.trend.income,
+                            smooth: true,
+                            itemStyle: {
+                                color: '#10b981'
+                            },
+                            areaStyle: {
+                                color: 'rgba(16, 185, 129, 0.1)'
+                            }
+                        },
+                        {
+                            name: '支出',
+                            type: 'line',
+                            data: charts.trend.expense,
+                            smooth: true,
+                            itemStyle: {
+                                color: '#ef4444'
+                            },
+                            areaStyle: {
+                                color: 'rgba(239, 68, 68, 0.1)'
+                            }
+                        },
+                        {
+                            name: '结余',
+                            type: 'line',
+                            data: charts.trend.balance,
+                            smooth: true,
+                            itemStyle: {
+                                color: '#667eea'
+                            }
+                        }
+                    ]
+                };
+                
+                trendChart.setOption(option);
+                console.log('折线图渲染完成');
+            } catch (error) {
+                console.error('折线图渲染失败:', error);
             }
-            
-            trendChart = echarts.init(trendChartRef.value);
-            
-            const option = {
-                tooltip: {
-                    trigger: 'axis'
-                },
-                legend: {
-                    data: ['收入', '支出', '结余']
-                },
-                grid: {
-                    left: '3%',
-                    right: '4%',
-                    bottom: '3%',
-                    containLabel: true
-                },
-                xAxis: {
-                    type: 'category',
-                    boundaryGap: false,
-                    data: charts.trend.months
-                },
-                yAxis: {
-                    type: 'value'
-                },
-                series: [
-                    {
-                        name: '收入',
-                        type: 'line',
-                        data: charts.trend.income,
-                        smooth: true,
-                        itemStyle: {
-                            color: '#10b981'
-                        },
-                        areaStyle: {
-                            color: 'rgba(16, 185, 129, 0.1)'
-                        }
-                    },
-                    {
-                        name: '支出',
-                        type: 'line',
-                        data: charts.trend.expense,
-                        smooth: true,
-                        itemStyle: {
-                            color: '#ef4444'
-                        },
-                        areaStyle: {
-                            color: 'rgba(239, 68, 68, 0.1)'
-                        }
-                    },
-                    {
-                        name: '结余',
-                        type: 'line',
-                        data: charts.trend.balance,
-                        smooth: true,
-                        itemStyle: {
-                            color: '#667eea'
-                        }
-                    }
-                ]
-            };
-            
-            trendChart.setOption(option);
         }
         
         // 刷新数据
@@ -387,6 +437,7 @@ createApp({
             isDragOver,
             importStatus,
             importHistory,
+            debugLogs,
             summary,
             recent_transactions,
             total_count,
