@@ -31,17 +31,19 @@ def parse_csv(file_path):
     
     try:
         with open(file_path, 'r', encoding='utf-8-sig') as f:
-            # 尝试检测 CSV 格式
-            sample = f.read(2048)
-            f.seek(0)
+            # 读取内容
+            content = f.read()
             
-            # 检测分隔符
-            try:
-                dialect = csv.Sniffer().sniff(sample)
-            except csv.Error:
-                dialect = csv.excel
+            # 微信账单使用中文逗号分隔，需要替换为英文逗号
+            # 中文逗号：， (U+FF0C)
+            if '，' in content:
+                content = content.replace('，', ',')
             
-            reader = csv.reader(f, dialect)
+            # 使用 StringIO 处理替换后的内容
+            from io import StringIO
+            f = StringIO(content)
+            
+            reader = csv.reader(f)
             
             # 读取表头
             headers = None

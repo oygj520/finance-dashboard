@@ -1,16 +1,16 @@
-# Finance Dashboard - 依赖包
+# Finance Dashboard - Dependencies
 # Python 3.8+
 
-# Web 框架
+# Web framework
 eel==0.16.0
 
-# 数据处理
+# Data processing
 pandas==2.1.4
 
-# 打包工具
+# Packaging tool
 pyinstaller==6.3.0
 
-# 其他依赖
+# Other dependencies
 bottle==0.12.25
 bottle-websocket==0.2.9
 gevent==23.9.1
