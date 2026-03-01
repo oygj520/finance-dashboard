@@ -55,9 +55,11 @@ createApp({
         // 加载仪表盘数据
         async function loadDashboardData() {
             try {
+                console.log('开始加载仪表盘数据...');
                 const result = await eel.get_dashboard_data()();
                 
                 if (result.success) {
+                    console.log('数据加载成功:', result);
                     // 更新概览数据
                     summary.today.income = result.summary.today.income;
                     summary.today.expense = result.summary.today.expense;
@@ -71,16 +73,21 @@ createApp({
                     Object.assign(charts.monthly, result.charts.monthly);
                     Object.assign(charts.trend, result.charts.trend);
                     
+                    console.log('图表数据:', charts);
+                    
                     // 更新最近交易
                     recent_transactions.value = result.recent_transactions;
                     total_count.value = result.total_count;
                     
                     // 渲染图表
                     await nextTick();
+                    console.log('准备渲染图表...');
                     renderCharts();
+                } else {
+                    console.error('数据加载失败:', result.error);
                 }
             } catch (error) {
-                console.error('加载数据失败:', error);
+                console.error('加载数据异常:', error);
             }
         }
         
@@ -105,7 +112,11 @@ createApp({
         
         // 渲染分类饼图
         function renderCategoryChart() {
-            if (!categoryChartRef.value) return;
+            console.log('renderCategoryChart:', categoryChartRef.value ? 'DOM 存在' : 'DOM 不存在');
+            if (!categoryChartRef.value) {
+                console.error('categoryChartRef DOM 元素不存在');
+                return;
+            }
             
             if (categoryChart) {
                 categoryChart.dispose();
@@ -153,7 +164,11 @@ createApp({
         
         // 渲染月度柱状图
         function renderMonthlyChart() {
-            if (!monthlyChartRef.value) return;
+            console.log('renderMonthlyChart:', monthlyChartRef.value ? 'DOM 存在' : 'DOM 不存在');
+            if (!monthlyChartRef.value) {
+                console.error('monthlyChartRef DOM 元素不存在');
+                return;
+            }
             
             if (monthlyChart) {
                 monthlyChart.dispose();
@@ -209,7 +224,11 @@ createApp({
         
         // 渲染趋势折线图
         function renderTrendChart() {
-            if (!trendChartRef.value) return;
+            console.log('renderTrendChart:', trendChartRef.value ? 'DOM 存在' : 'DOM 不存在');
+            if (!trendChartRef.value) {
+                console.error('trendChartRef DOM 元素不存在');
+                return;
+            }
             
             if (trendChart) {
                 trendChart.dispose();
@@ -352,6 +371,12 @@ createApp({
         
         // 生命周期
         onMounted(() => {
+            console.log('Vue 应用已挂载');
+            console.log('DOM 元素检查:');
+            console.log('  categoryChartRef:', categoryChartRef.value);
+            console.log('  monthlyChartRef:', monthlyChartRef.value);
+            console.log('  trendChartRef:', trendChartRef.value);
+            
             initApp();
             window.addEventListener('resize', handleResize);
         });

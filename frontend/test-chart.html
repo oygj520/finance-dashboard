@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图表测试</title>
+    <script src="https://unpkg.com/echarts@5/dist/echarts.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+        .chart-box { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .chart { width: 100%; height: 300px; }
+        h2 { margin-bottom: 10px; color: #333; }
+        .status { padding: 10px; margin-bottom: 10px; border-radius: 4px; }
+        .success { background: #d1fae5; color: #065f46; }
+        .error { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <h1>ECharts 渲染测试</h1>
+    
+    <div id="status" class="status">等待测试...</div>
+    
+    <div class="chart-box">
+        <h2>📊 分类支出占比（饼图）</h2>
+        <div id="categoryChart" class="chart"></div>
+    </div>
+    
+    <div class="chart-box">
+        <h2>📈 月度收支趋势（柱状图）</h2>
+        <div id="monthlyChart" class="chart"></div>
+    </div>
+    
+    <div class="chart-box">
+        <h2>📉 收入/支出对比趋势（折线图）</h2>
+        <div id="trendChart" class="chart"></div>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        
+        try {
+            console.log('ECharts 版本:', echarts.version);
+            statusDiv.className = 'status success';
+            statusDiv.textContent = '✓ ECharts 加载成功 (版本: ' + echarts.version + ')';
+            
+            // 测试饼图
+            const categoryChart = echarts.init(document.getElementById('categoryChart'));
+            categoryChart.setOption({
+                tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
+                legend: { orient: 'vertical', right: 10, top: 'center' },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    center: ['35%', '50%'],
+                    data: [
+                        { value: 626.0, name: '餐饮' },
+                        { value: 365.0, name: '购物' },
+                        { value: 318.0, name: '交通' },
+                        { value: 306.0, name: '娱乐' }
+                    ]
+                }]
+            });
+            console.log('✓ 饼图渲染成功');
+            
+            // 测试柱状图
+            const monthlyChart = echarts.init(document.getElementById('monthlyChart'));
+            monthlyChart.setOption({
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                legend: { data: ['收入', '支出'] },
+                xAxis: { type: 'category', data: ['2026-02'] },
+                yAxis: { type: 'value' },
+                series: [
+                    { name: '收入', type: 'bar', data: [6000.0], itemStyle: { color: '#10b981' } },
+                    { name: '支出', type: 'bar', data: [1761.0], itemStyle: { color: '#ef4444' } }
+                ]
+            });
+            console.log('✓ 柱状图渲染成功');
+            
+            // 测试折线图
+            const trendChart = echarts.init(document.getElementById('trendChart'));
+            trendChart.setOption({
+                tooltip: { trigger: 'axis' },
+                legend: { data: ['收入', '支出', '结余'] },
+                xAxis: { type: 'category', boundaryGap: false, data: ['2026-02'] },
+                yAxis: { type: 'value' },
+                series: [
+                    { name: '收入', type: 'line', data: [6000.0], smooth: true, itemStyle: { color: '#10b981' } },
+                    { name: '支出', type: 'line', data: [1761.0], smooth: true, itemStyle: { color: '#ef4444' } },
+                    { name: '结余', type: 'line', data: [4239.0], smooth: true, itemStyle: { color: '#667eea' } }
+                ]
+            });
+            console.log('✓ 折线图渲染成功');
+            
+            statusDiv.textContent += ' | ✓ 所有图表渲染成功';
+            
+        } catch (error) {
+            console.error('测试失败:', error);
+            statusDiv.className = 'status error';
+            statusDiv.textContent = '✗ 测试失败：' + error.message;
+        }
+        
+        // 窗口大小变化时重新渲染
+        window.addEventListener('resize', function() {
+            categoryChart.resize();
+            monthlyChart.resize();
+            trendChart.resize();
+        });
+    </script>
+</body>
+</html>
